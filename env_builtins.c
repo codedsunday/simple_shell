@@ -1,133 +1,80 @@
 #include "shell.h"
 
-int shellby_env(char **args, char __attribute__((__unused__)) **front);
-int shellby_setenv(char **args, char __attribute__((__unused__)) **front);
-int shellby_unsetenv(char **args, char __attribute__((__unused__)) **front);
-
 /**
- * shellby_env - Prints the current environment.
- * @args: An array of arguments passed to the shell.
- * @front: A double pointer to the beginning of args.
+ * cmp_env_name - compares env variables names
+ * with the name passed.
+ * @nenv: name of the environment variable
+ * @name: name passed
  *
- * Return: If an error occurs - -1.
- *	   Otherwise - 0.
- *
- * Description: Prints one variable per line in the
- *              format 'variable'='value'.
+ * Return: 0 if are not equal. Another value if they are.
  */
-int shellby_env(char **args, char __attribute__((__unused__)) **front)
+int cmp_env_name(const char *nenv, const char *name)
 {
-	int index;
-	char nc = '\n';
+	int i;
 
-	if (!environ)
-		return (-1);
-
-	for (index = 0; environ[index]; index++)
+	for (i = 0; nenv[i] != '='; i++)
 	{
-		write(STDOUT_FILENO, environ[index], _strlen(environ[index]));
-		write(STDOUT_FILENO, &nc, 1);
-	}
-
-	(void)args;
-	return (0);
-}
-
-/**
- * shellby_setenv - Changes or adds an environmental variable to the PATH.
- * @args: An array of arguments passed to the shell.
- * @front: A double pointer to the beginning of args.
- * Description: args[1] is the name of the new or existing PATH variable.
- *              args[2] is the value to set the new or changed variable to.
- *
- * Return: If an error occurs - -1.
- *         Otherwise - 0.
- */
-int shellby_setenv(char **args, char __attribute__((__unused__)) **front)
-{
-	char **env_var = NULL, **new_environ, *new_value;
-	size_t size;
-	int index;
-
-	if (!args[0] || !args[1])
-		return (create_error(args, -1));
-
-	new_value = malloc(_strlen(args[0]) + 1 + _strlen(args[1]) + 1);
-	if (!new_value)
-		return (create_error(args, -1));
-	_strcpy(new_value, args[0]);
-	_strcat(new_value, "=");
-	_strcat(new_value, args[1]);
-
-	env_var = _getenv(args[0]);
-	if (env_var)
-	{
-		free(*env_var);
-		*env_var = new_value;
-		return (0);
-	}
-	for (size = 0; environ[size]; size++)
-		;
-
-	new_environ = malloc(sizeof(char *) * (size + 2));
-	if (!new_environ)
-	{
-		free(new_value);
-		return (create_error(args, -1));
-	}
-
-	for (index = 0; environ[index]; index++)
-		new_environ[index] = environ[index];
-
-	free(environ);
-	environ = new_environ;
-	environ[index] = new_value;
-	environ[index + 1] = NULL;
-
-	return (0);
-}
-
-/**
- * shellby_unsetenv - Deletes an environmental variable from the PATH.
- * @args: An array of arguments passed to the shell.
- * @front: A double pointer to the beginning of args.
- * Description: args[1] is the PATH variable to remove.
- *
- * Return: If an error occurs - -1.
- *         Otherwise - 0.
- */
-int shellby_unsetenv(char **args, char __attribute__((__unused__)) **front)
-{
-	char **env_var, **new_environ;
-	size_t size;
-	int index, index2;
-
-	if (!args[0])
-		return (create_error(args, -1));
-	env_var = _getenv(args[0]);
-	if (!env_var)
-		return (0);
-
-	for (size = 0; environ[size]; size++)
-		;
-
-	new_environ = malloc(sizeof(char *) * size);
-	if (!new_environ)
-		return (create_error(args, -1));
-
-	for (index = 0, index2 = 0; environ[index]; index++)
-	{
-		if (*env_var == environ[index])
+		if (nenv[i] != name[i])
 		{
-			free(*env_var);
-			continue;
+			return (0);
 		}
-		new_environ[index2] = environ[index];
-		index2++;
 	}
-	free(environ);
-	environ = new_environ;
-	environ[size - 1] = NULL;
 
-	return (0);
+	return (i + 1);
+}
+
+/**
+ * _getenv - get an environment variable
+ * @name: name of the environment variable
+ * @_environ: environment variable
+ *
+ * Return: value of the environment variable if is found.
+ * In other case, returns NULL.
+ */
+char *_getenv(const char *name, char **_environ)
+{
+	char *ptr_env;
+	int i, mov;
+
+	/* Initialize ptr_env value */
+	ptr_env = NULL;
+	mov = 0;
+	/* Compare all environment variables */
+	/* environ is declared in the header file */
+	for (i = 0; _environ[i]; i++)
+	{
+		/* If name and env are equal */
+		mov = cmp_env_name(_environ[i], name);
+		if (mov)
+		{
+			ptr_env = _environ[i];
+			break;
+		}
+	}
+
+	return (ptr_env + mov);
+}
+
+/**
+ * _env - prints the evironment variables
+ *
+ * @datash: data relevant.
+ * Return: 1 on success.
+ */
+int _env(data_shell *datash)
+{
+	int i, j;
+
+	for (i = 0; datash->_environ[i]; i++)
+	{
+
+		for (j = 0; datash->_environ[i][j]; j++)
+			;
+
+		write(STDOUT_FILENO, datash->_environ[i], j);
+		write(STDOUT_FILENO, "\n", 1);
+	}
+	datash->status = 0;
+
+	return (1);
 }
